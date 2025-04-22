@@ -1,39 +1,53 @@
 # main.py
 
-from transformers import pipeline
+import logging
 
-# 1. Load the sentiment analysis pipeline
-try:
-    print("Loading sentiment analysis pipeline...")
-    # Using a specific model for consistency
-    sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
-    print("Pipeline loaded successfully.")
-except Exception as e:
-    print(f"Error loading pipeline: {e}")
-    exit() # Exit if the pipeline can't be loaded
+from sentiment_analyzer.analyzer import analyze_sentiment
 
-# 2. Sample text
+# Configure basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# --- Define Input ---
 example_texts = [
     "This is a fantastic library! I love using it.",
     "The documentation could be clearer, and I encountered some bugs.",
     "It's an okay tool, neither good nor bad.",
+    "This is just a neutral statement.",
+    "", # Test empty string
+    None # Test None value (should be handled by input validation ideally)
 ]
 
-# 3. Analyze the text
-print("\nAnalyzing sentiments...")
-try:
-    results = sentiment_pipeline(example_texts)
-except Exception as e:
-    print(f"Error during analysis: {e}")
-    results = [] # Ensure results is iterable even on error
+# --- Main Execution Block ---
+if __name__ == "__main__":
+    logging.info("Starting sentiment analysis process...")
 
-# 4. Print the results
-print("\n--- Results ---")
-for i, result in enumerate(results):
-    text = example_texts[i]
-    label = result.get('label', 'N/A')
-    score = result.get('score', 0.0)
-    print(f"Text: \"{text}\"")
-    print(f"Sentiment: {label}, Score: {score:.4f}\n")
+    # Filter out potential None values or other non-strings before sending to analyzer
+    valid_texts = [text for text in example_texts if isinstance(text, str)]
+    if len(valid_texts) != len(example_texts):
+        logging.warning("Some invalid input items (e.g., None) were filtered out.")
 
-print("--- Analysis Complete ---")
+    results = analyze_sentiment(valid_texts)
+
+    # --- Process and Print results ---
+    print("\n--- Results ---")
+    if results:
+        # Make sure we align results with the valid texts we sent
+        for i, result in enumerate(results):
+            if i < len(valid_texts):
+                text = valid_texts[i]
+                label = result.get('label', 'N/A')
+                score = result.get('score', 0.0)
+                # Handle potentially empty text display
+                display_text = text if text else "'' (Empty String)"
+                print(f"Text: \"{display_text}\"")
+                print(f"Sentiment: {label}, Score: {score:.4f}\n")
+            else:
+                logging.warning(f"Result index {i} out of bounds for valid input texts.")
+    else:
+        # Check if the input itself was empty after filtering
+        if not valid_texts:
+            print("No valid texts provided for analysis.")
+        else:
+            print("No results returned from analysis (check logs for errors).")
+
+    print("--- Analysis Complete ---")
