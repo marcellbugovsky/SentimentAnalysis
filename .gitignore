@@ -1,0 +1,71 @@
+# --- Python ---
+# Virtual Environments
+env/
+venv/
+ENV/
+VENV/
+.env/
+.venv/
+*/__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / Installation
+build/
+dist/
+*.egg-info/
+wheels/
+*.tar.gz
+*.egg
+*.whl
+*.pyc
+
+# --- IDEs / Editors ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+
+# --- Operating System Files ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Testing ---
+.pytest_cache/
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+
+# --- Notebooks ---
+.ipynb_checkpoints
+
+# --- ML / Data ---
+# Ignore potentially large data files or downloaded models stored locally.
+# Add specific directories or file patterns if you store large data/models within the project.
+# Note: Hugging Face models are typically cached globally (~/.cache/huggingface) and won't be committed,
+# but if you save models *inside* the project structure, list those directories here.
+# Example:
+# models_cache/
+# large_dataset.csv
+
+# --- Secrets / Local Config ---
+# Ignore environment variables or local configuration overrides
+*.env
+config.local.*
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Other ---
+*.swp
+*.swo
+*~
