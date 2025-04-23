@@ -1,53 +1,59 @@
 # main.py
 
+import argparse
 import logging
 
-from sentiment_analyzer.analyzer import analyze_sentiment
+from sentiment_analyzer.analyzer import SentimentAnalyzer, DEFAULT_MODEL
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# --- Define Input ---
-example_texts = [
-    "This is a fantastic library! I love using it.",
-    "The documentation could be clearer, and I encountered some bugs.",
-    "It's an okay tool, neither good nor bad.",
-    "This is just a neutral statement.",
-    "", # Test empty string
-    None # Test None value (should be handled by input validation ideally)
-]
+def main():
+    """
+    Main function to parse arguments and perform sentiment analysis.
+    """
+    parser = argparse.ArgumentParser(description="Analyze sentiment of a given text using Hugging Face models.")
 
-# --- Main Execution Block ---
-if __name__ == "__main__":
-    logging.info("Starting sentiment analysis process...")
+    # Argument for the input text
+    parser.add_argument("-t", "--text",
+                        type=str,
+                        required=True, # Make text input mandatory
+                        help="The text string to analyze.")
 
-    # Filter out potential None values or other non-strings before sending to analyzer
-    valid_texts = [text for text in example_texts if isinstance(text, str)]
-    if len(valid_texts) != len(example_texts):
-        logging.warning("Some invalid input items (e.g., None) were filtered out.")
+    # Argument for the model name
+    parser.add_argument("-m", "--model",
+                        type=str,
+                        default=DEFAULT_MODEL, # Use the default from analyzer module
+                        help=f"The Hugging Face model name for sentiment analysis (default: {DEFAULT_MODEL}).")
 
-    results = analyze_sentiment(valid_texts)
+    args = parser.parse_args()
 
-    # --- Process and Print results ---
-    print("\n--- Results ---")
+    # --- Instantiate Analyzer and Analyze ---
+    logging.info(f"Initializing analyzer with model: {args.model}")
+    # Create an instance of our analyzer class with the specified model
+    analyzer = SentimentAnalyzer(model_name=args.model)
+
+    # The analyzer expects a list of texts
+    input_text_list = [args.text]
+
+    # Perform the analysis
+    results = analyzer.analyze(input_text_list)
+
+    # --- Process and Print Results ---
+    print("\n--- Result ---")
     if results:
-        # Make sure we align results with the valid texts we sent
-        for i, result in enumerate(results):
-            if i < len(valid_texts):
-                text = valid_texts[i]
-                label = result.get('label', 'N/A')
-                score = result.get('score', 0.0)
-                # Handle potentially empty text display
-                display_text = text if text else "'' (Empty String)"
-                print(f"Text: \"{display_text}\"")
-                print(f"Sentiment: {label}, Score: {score:.4f}\n")
-            else:
-                logging.warning(f"Result index {i} out of bounds for valid input texts.")
+        # Since we analyze only one text, we expect only one result
+        result = results[0]
+        label = result.get('label', 'N/A')
+        score = result.get('score', 0.0)
+        print(f"Text: \"{args.text}\"")
+        print(f"Sentiment: {label}")
+        print(f"Confidence Score: {score:.4f}\n")
     else:
-        # Check if the input itself was empty after filtering
-        if not valid_texts:
-            print("No valid texts provided for analysis.")
-        else:
-            print("No results returned from analysis (check logs for errors).")
+        print(f"Could not analyze the text (check logs for errors using model: {args.model}).")
 
     print("--- Analysis Complete ---")
+
+
+if __name__ == "__main__":
+    main()

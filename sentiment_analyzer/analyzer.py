@@ -1,58 +1,74 @@
 # sentiment_analyzer/analyzer.py
 
-from transformers import pipeline
+from transformers import pipeline, Pipeline
 import logging
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# --- Load Model ---
-# Load the pipeline once when the module is loaded for efficiency.
-SENTIMENT_PIPELINE = None # Initialized as None
-try:
-    logging.info("Loading sentiment analysis pipeline (this may take a moment)...")
-    SENTIMENT_PIPELINE = pipeline(
-        "sentiment-analysis",
-        model="distilbert-base-uncased-finetuned-sst-2-english",
-        device=0
-    )
-    logging.info("Sentiment analysis pipeline loaded successfully.")
-except Exception as e:
-    # Log the error and keep SENTIMENT_PIPELINE as None
-    logging.error(f"Failed to load sentiment analysis pipeline: {e}", exc_info=True)
+DEFAULT_MODEL = "distilbert-base-uncased-finetuned-sst-2-english"
 
-# --- Analysis Function ---
-def analyze_sentiment(text_list):
+class SentimentAnalyzer:
     """
-    Analyzes the sentiment of a list of texts using the pre-loaded pipeline.
-
-    Args:
-        text_list (list): A list of strings, where each string is a text to analyze.
-
-    Returns:
-        list: A list of dictionaries containing 'label' and 'score' for each input text.
-              Returns an empty list if the pipeline isn't loaded or an error occurs.
-              Returns an empty list if the input is not a non-empty list.
+    A class to handle sentiment analysis using a specified Hugging Face model.
+    Loads the model pipeline upon initialization.
     """
-    global SENTIMENT_PIPELINE
+    def __init__(self, model_name: str = DEFAULT_MODEL):
+        """
+        Initializes the SentimentAnalyzer by loading the specified model pipeline.
 
-    if SENTIMENT_PIPELINE is None:
-        logging.error("Sentiment pipeline is not available.")
-        return []
+        Args:
+            model_name (str): The name or path of the Hugging Face model to use for sentiment analysis.
+        """
+        self.model_name = model_name
+        self.pipeline: Pipeline | None = None
+        self._load_pipeline()
 
-    # Input validation
-    if not isinstance(text_list, list):
-        logging.warning("Input is not a list. Please provide a list of strings.")
-        return []
-    if not text_list:
-        logging.warning("Input text list is empty.")
-        return []
+    def _load_pipeline(self):
+        """Loads the Hugging Face sentiment analysis pipeline."""
+        try:
+            logging.info(f"Loading sentiment analysis pipeline for model: '{self.model_name}'...")
+            self.pipeline = pipeline(
+                "sentiment-analysis",
+                model=self.model_name,
+                device=0
+            )
+            logging.info(f"Pipeline loaded successfully for model: '{self.model_name}'.")
+        except Exception as e:
+            logging.error(f"Failed to load pipeline for model '{self.model_name}': {e}", exc_info=True)
 
-    try:
-        logging.info(f"Analyzing sentiment for {len(text_list)} text(s)...")
-        results = SENTIMENT_PIPELINE(text_list)
-        logging.info("Sentiment analysis complete.")
-        return results
-    except Exception as e:
-        logging.error(f"Error during sentiment analysis: {e}", exc_info=True)
-        return []
+    def analyze(self, text_list: list[str]) -> list:
+        """
+        Analyzes the sentiment of a list of texts using the pre-loaded pipeline.
+
+        Args:
+            text_list (list): A list of strings, where each string is a text to analyze.
+
+        Returns:
+            list: A list of dictionaries containing 'label' and 'score' for each input text.
+                  Returns an empty list if the pipeline isn't loaded or an error occurs.
+                  Returns an empty list if the input is not a non-empty list.
+        """
+        if self.pipeline is None:
+            logging.error(f"Sentiment pipeline for model '{self.model_name}' is not available.")
+            return []
+
+        # Input validation
+        if not isinstance(text_list, list):
+            logging.warning("Input is not a list. Please provide a list of strings.")
+            return []
+        if not text_list:
+            logging.warning("Input text list is empty.")
+            return []
+        if not all(isinstance(text, str) for text in text_list):
+            logging.warning("Input list contains non-string elements.")
+            return []
+
+        try:
+            logging.info(f"Analyzing sentiment for {len(text_list)} text(s) using model '{self.model_name}'...")
+            results = self.pipeline(text_list)
+            logging.info("Sentiment analysis complete.")
+            return results
+        except Exception as e:
+            logging.error(f"Error during sentiment analysis with model '{self.model_name}': {e}", exc_info=True)
+            return []
